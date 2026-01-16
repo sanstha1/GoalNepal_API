@@ -4,14 +4,10 @@ const User = require("../models/user");
 
 
 exports.register = async (req, res) => {
-  const { fullName, email, password, confirmPassword } = req.body;
+  const { fullName, email, password } = req.body;
 
-  if (!fullName || !email || !password || !confirmPassword) {
+  if (!fullName || !email || !password) {
     return res.status(400).json({ message: "All fields are required" });
-  }
-
-  if (password !== confirmPassword) {
-    return res.status(400).json({ message: "Passwords do not match" });
   }
 
   try {
@@ -22,7 +18,7 @@ exports.register = async (req, res) => {
 
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    const user = await User.create({
+    await User.create({
       fullName,
       email,
       password: hashedPassword,
@@ -35,6 +31,7 @@ exports.register = async (req, res) => {
     res.status(500).json({ message: "Server error" });
   }
 };
+
 
 
 exports.login = async (req, res) => {
