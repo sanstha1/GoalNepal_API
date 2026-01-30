@@ -19,6 +19,15 @@ const UserSchema = new mongoose.Schema(
       minlength: 6,
       select: false,
     },
+      profilePicture: {
+    type: String,
+    default: "default-profile.png",
+    trim: true,
+  },
+  createdAt: {
+    type: Date,
+    default: Date.now,
+  },
   },
   { timestamps: true }
 );

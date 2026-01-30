@@ -2,7 +2,6 @@ const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const User = require("../models/user");
 
-
 exports.register = async (req, res) => {
   const { fullName, email, password } = req.body;
 
@@ -22,15 +21,15 @@ exports.register = async (req, res) => {
       fullName,
       email,
       password: hashedPassword,
+      profilePicture: "default-profile.png",
     });
 
-    res.status(201).json({
-      message: "User registered successfully",
-    });
+    res.status(201).json({ message: "User registered successfully" });
   } catch (error) {
     res.status(500).json({ message: "Server error" });
   }
 };
+
 
 
 
@@ -65,9 +64,11 @@ exports.login = async (req, res) => {
         id: user._id,
         fullName: user.fullName,
         email: user.email,
+        profilePicture: user.profilePicture,
       },
     });
   } catch (error) {
     res.status(500).json({ message: "Server error" });
   }
 };
+
