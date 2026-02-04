@@ -3,7 +3,7 @@ import { UserRepository } from "../../repositories/user.repository";
 import bcryptjs from "bcryptjs";
 import { HttpError } from "../../errors/http-error";
 import jwt from "jsonwebtoken";
-import { JWT_SECRET } from "../../config";
+import { JWT_SECRET } from "../../config/env";
 import { IAdmin } from "../../models/admin/admin.model";
 
 const adminRepository = new AdminRepository();
