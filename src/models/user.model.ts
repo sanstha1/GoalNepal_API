@@ -31,6 +31,12 @@ const UserSchema: Schema = new Schema(
       enum: ["admin", "user"],
       default: "user",
     },
+    resetPasswordToken: {
+      type: String,
+    },
+    resetPasswordExpire: {
+      type: Number,
+    },
   },
   { timestamps: true }
 );
@@ -39,8 +45,11 @@ export interface IUser extends Document {
   fullName: string;
   email: string;
   password?: string;
-  profilePicture?: string;
+  profilePicture?: string | null;
   role: "admin" | "user";
+  imageUrl?: string | null;
+  resetPasswordToken?: string;
+  resetPasswordExpire?: number;
   _id: mongoose.Types.ObjectId;
   createdAt: Date;
   updatedAt: Date;

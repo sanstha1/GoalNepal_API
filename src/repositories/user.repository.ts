@@ -1,49 +1,68 @@
-import {IUser, UserModel} from "../models/user.model"; 
+import { QueryFilter } from "mongoose";
+import { IUser, UserModel } from "../models/user.model";
 
-export interface IUserRepository{
-    createUser(data: Partial<IUser>) : Promise<IUser> ; 
-    getUserbyUsername(fullName: string) : Promise<IUser|null>;
-    getUserbyEmail(email: string) : Promise<IUser |null>;
-    //additional
-    getUserbyId(id: string) : Promise<IUser |null>; //get one
-    getAllUsers() : Promise<IUser[]>; //get all
-    updateUser(id: string, data: Partial<IUser>) : Promise<IUser |null>; //update one
-    deleteUser(id: string) : Promise<boolean | null>; //delete one
+export interface IUserRepository {
+  createUser(data: Partial<IUser>): Promise<IUser>;
+  getUserByEmail(email: string): Promise<IUser | null>;
+  getUserByFullName(fullName: string): Promise<IUser | null>;
+  getUserById(id: string): Promise<IUser | null>;
+  getAllUsers(
+    page: number,
+    size: number,
+    search?: string
+  ): Promise<{ users: IUser[]; total: number }>;
+  updateUser(id: string, data: Partial<IUser>): Promise<IUser | null>;
+  deleteUser(id: string): Promise<boolean>;
 }
 
-//usermodel -> db.users collection
-export class UserRepository implements IUserRepository{
-    async createUser(data: Partial<IUser>): Promise<IUser>{
-        const user = new UserModel(data); //mongodb model 
-        return await user.save();
+export class UserRepository implements IUserRepository {
+  async createUser(data: Partial<IUser>): Promise<IUser> {
+    const user = new UserModel(data);
+    return await user.save();
+  }
+
+  async getUserByEmail(email: string): Promise<IUser | null> {
+    return await UserModel.findOne({ email });
+  }
+
+  async getUserByFullName(fullName: string): Promise<IUser | null> {
+    return await UserModel.findOne({ fullName });
+  }
+
+  async getUserById(id: string): Promise<IUser | null> {
+    return await UserModel.findById(id);
+  }
+
+  async getAllUsers(
+    page: number,
+    size: number,
+    search?: string
+  ): Promise<{ users: IUser[]; total: number }> {
+    const filter: QueryFilter<IUser> = {};
+
+    if (search) {
+      filter.$or = [
+        { fullName: { $regex: search, $options: "i" } },
+        { email: { $regex: search, $options: "i" } },
+      ];
     }
 
-     async getUserbyEmail(email: string): Promise<IUser|null>{
-        const user = await UserModel.findOne({"email" : email}) ;
-        return user; 
-    }
+    const skip = (page - 1) * size;
 
-     async getUserbyUsername(fullName: string): Promise<IUser|null>{
-        const user = await UserModel.findOne({"fullName" : fullName});
-        return user; 
-    }
-    async getUserbyId(id: string): Promise<IUser|null>{
-        //UserModel.findOne({"_id": id})
-        const user = await UserModel.findById(id);
-        return user; 
-    }
-    async getAllUsers(): Promise<IUser[]>{
-        const users = await UserModel.find();
-        return users; 
-    }
-    async updateUser(id: string, data: Partial<IUser>): Promise<IUser|null>{
-        //UserModel.updateOne({"_id":id},{$set: data})
-        const updatedUser = await UserModel.findByIdAndUpdate(id, data, {new: true});
-        return updatedUser; 
-    }
-    async deleteUser(id: string): Promise<boolean | null>{
-        //UserModel.deleteOne({"_id": id})
-        const result = await UserModel.findByIdAndDelete(id);
-        return result ? true : null; 
-    }
+    const [users, total] = await Promise.all([
+      UserModel.find(filter).skip(skip).limit(size),
+      UserModel.countDocuments(filter),
+    ]);
+
+    return { users, total };
+  }
+
+  async updateUser(id: string, data: Partial<IUser>): Promise<IUser | null> {
+    return await UserModel.findByIdAndUpdate(id, data, { new: true });
+  }
+
+  async deleteUser(id: string): Promise<boolean> {
+    const result = await UserModel.findByIdAndDelete(id);
+    return !!result;
+  }
 }

@@ -3,92 +3,126 @@ import { UserRepository } from "../repositories/user.repository";
 import bcryptjs from "bcryptjs";
 import { HttpError } from "../errors/http-error";
 import jwt from "jsonwebtoken";
-import { JWT_SECRET } from "../config/env";
+import { JWT_SECRET, CLIENT_URL } from "../config/env";
+import { sendEmail } from "../config/email";
 
 const userRepository = new UserRepository();
 
 export class UserService {
-    getAllUsers() {
-        throw new Error("Method not implemented.");
-    }
-    deleteUser(userId: string) {
-        throw new Error("Method not implemented.");
-    }
-    
-    // Fully implemented Update method
-    async updateUser(userId: string, updatePayload: Partial<UpdateUserDto> & { profilePicture?: string }) {
-        const user = await userRepository.getUserbyId(userId);
-        if (!user) {
-            throw new HttpError(404, "User not found");
-        }
+  // -------------------- Create User --------------------
+  async createUser(data: CreateUserDto) {
+    const emailCheck = await userRepository.getUserByEmail(data.email);
+    if (emailCheck) throw new HttpError(403, "Email already in use");
 
-        // If password is being updated, hash it
-        if (updatePayload.password) {
-            updatePayload.password = await bcryptjs.hash(updatePayload.password, 10);
-        }
+    const hashedPassword = await bcryptjs.hash(data.password, 10);
+    const { confirmPassword, ...userData } = data;
+    userData.password = hashedPassword;
 
-        const updatedUser = await userRepository.updateUser(userId, updatePayload);
-        
-        if (!updatedUser) {
-            throw new HttpError(500, "Failed to update user");
-        }
+    return await userRepository.createUser(userData);
+  }
 
-        return updatedUser;
-    }
+  // -------------------- Login User --------------------
+  async loginUser(data: LoginUserDto) {
+    const user = await userRepository.getUserByEmail(data.email);
+    if (!user) throw new HttpError(404, "User not found");
+    if (!user.password) throw new HttpError(500, "User record missing password");
 
-    async registerUser(data: CreateUserDto) {
-        const checkEmail = await userRepository.getUserbyEmail(data.email);
-        if (checkEmail) {
-            throw new HttpError(403, "Email already in use");
-        }
+    const isValid = await bcryptjs.compare(data.password, user.password);
+    if (!isValid) throw new HttpError(401, "Invalid credentials");
 
-        const hashedPassword = await bcryptjs.hash(data.password, 10);
+    const payload = { id: user._id, email: user.email, role: user.role };
+    const token = jwt.sign(payload, JWT_SECRET, { expiresIn: "30d" });
 
-        // Destructure to remove confirmPassword and keep the rest (fullName, email, etc.)
-        const { confirmPassword, ...userData } = data;
+    return { token, user };
+  }
 
-        return await userRepository.createUser({
-            ...userData,
-            password: hashedPassword,
-        });
-    }
+  // -------------------- Get User By ID --------------------
+  async getUserById(userId: string) {
+    const user = await userRepository.getUserById(userId);
+    if (!user) throw new HttpError(404, "User not found");
+    return user;
+  }
 
-    async LoginUser(data: LoginUserDto) {
-        const existingUser = await userRepository.getUserbyEmail(data.email);
+  // -------------------- Update User --------------------
+  async updateUser(userId: string, data: UpdateUserDto) {
+    const user = await userRepository.getUserById(userId);
+    if (!user) throw new HttpError(404, "User not found");
 
-        if (!existingUser) {
-            throw new HttpError(404, "User not found");
-        }
-
-        if (!existingUser.password) {
-            throw new HttpError(500, "User record missing password");
-        }
-
-        const isPasswordValid = await bcryptjs.compare(
-            data.password,
-            existingUser.password
-        );
-
-        if (!isPasswordValid) {
-            throw new HttpError(401, "Invalid credentials");
-        }
-
-        const payload = {
-            id: existingUser._id,
-            email: existingUser.email,
-            role: existingUser.role,
-        };
-
-        const token = jwt.sign(payload, JWT_SECRET, { expiresIn: "30d" });
-
-        return { token, existingUser };
+    if (data.email && data.email !== user.email) {
+      const emailExists = await userRepository.getUserByEmail(data.email);
+      if (emailExists) throw new HttpError(403, "Email already in use");
     }
 
-    async getUserById(userId: string) {
-        const user = await userRepository.getUserbyId(userId);
-        if (!user) {
-            throw new HttpError(404, "User not found");
-        }
-        return user;
+    if (data.password) {
+      data.password = await bcryptjs.hash(data.password, 10);
     }
+
+    const { confirmPassword, ...updateData } = data;
+    return await userRepository.updateUser(userId, updateData);
+  }
+
+  // -------------------- Send Reset Password Email --------------------
+  async sendResetPasswordEmail(email?: string) {
+    if (!email) throw new HttpError(400, "Email is required");
+
+    const user = await userRepository.getUserByEmail(email);
+    if (!user) throw new HttpError(404, "User not found");
+
+    const token = jwt.sign({ id: user._id }, JWT_SECRET, { expiresIn: "1h" });
+
+    const resetLink = `${CLIENT_URL}/reset-password?token=${token}`;
+    const html = `
+      <p>Hello ${user.fullName || "User"},</p>
+      <p>You requested a password reset. Click the link below to reset your password:</p>
+      <p><a href="${resetLink}" target="_blank">Reset Password</a></p>
+      <p>This link will expire in 1 hour.</p>
+    `;
+
+    try {
+      await sendEmail(user.email, "GoalNepal Password Reset", html);
+    } catch (err: any) {
+      console.error("Email Error:", err);
+      throw new HttpError(500, "Failed to send reset email. Check your email configuration.");
+    }
+
+    return { message: "Password reset email sent successfully." };
+  }
+
+  // -------------------- Reset Password --------------------
+  async resetPassword(token?: string, newPassword?: string) {
+    if (!token || !newPassword) throw new HttpError(400, "Token and new password are required");
+
+    try {
+      const decoded: any = jwt.verify(token, JWT_SECRET);
+      const userId = decoded.id;
+
+      const user = await userRepository.getUserById(userId);
+      if (!user) throw new HttpError(404, "User not found");
+
+      const hashedPassword = await bcryptjs.hash(newPassword, 10);
+      await userRepository.updateUser(userId, { password: hashedPassword });
+
+      return { message: "Password reset successfully." };
+    } catch (err) {
+      console.error("Reset Password Error:", err);
+      throw new HttpError(400, "Invalid or expired token.");
+    }
+  }
+
+  // -------------------- Logout --------------------
+  async logout() {
+    return true;
+  }
+
+  // -------------------- Get All Users --------------------
+  async getAllUsers(page: number = 1, size: number = 10, search?: string) {
+    return await userRepository.getAllUsers(page, size, search);
+  }
+
+  // -------------------- Delete User --------------------
+  async deleteUser(userId: string) {
+    const user = await userRepository.getUserById(userId);
+    if (!user) throw new HttpError(404, "User not found");
+    return await userRepository.deleteUser(userId);
+  }
 }

@@ -13,7 +13,7 @@ export class AdminService {
     async registerAdmin(data: any) {
         try {
             // Check if email exists in either User or Admin collections
-            const existingUser = await userRepository.getUserbyEmail(data.email);
+            const existingUser = await userRepository.getUserByEmail(data.email);
             const existingAdmin = await adminRepository.getUserbyEmail(data.email);
             
             if (existingUser || existingAdmin) {

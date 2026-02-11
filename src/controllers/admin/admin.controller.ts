@@ -217,7 +217,7 @@ export class AdminController {
         userData.profilePicture = req.file.filename;
       }
 
-      const newUser = await userService.registerUser(userData);
+      const newUser = await userService.createUser(userData);
 
       if (newUser.profilePicture) {
         newUser.profilePicture = `${req.protocol}://${req.get("host")}/profile_pictures/${newUser.profilePicture}`;
