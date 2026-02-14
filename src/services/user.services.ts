@@ -5,11 +5,11 @@ import { HttpError } from "../errors/http-error";
 import jwt from "jsonwebtoken";
 import { JWT_SECRET, CLIENT_URL } from "../config/env";
 import { sendEmail } from "../config/email";
+import { IUser } from "../models/user.model";
 
 const userRepository = new UserRepository();
 
 export class UserService {
-  // -------------------- Create User --------------------
   async createUser(data: CreateUserDto) {
     const emailCheck = await userRepository.getUserByEmail(data.email);
     if (emailCheck) throw new HttpError(403, "Email already in use");
@@ -18,10 +18,14 @@ export class UserService {
     const { confirmPassword, ...userData } = data;
     userData.password = hashedPassword;
 
-    return await userRepository.createUser(userData);
+    const newUser = await userRepository.createUser(userData);
+    
+    const userObject = typeof newUser.toObject === "function" ? newUser.toObject() : newUser;
+    const { password, ...userWithoutPassword } = userObject;
+
+    return userWithoutPassword;
   }
 
-  // -------------------- Login User --------------------
   async loginUser(data: LoginUserDto) {
     const user = await userRepository.getUserByEmail(data.email);
     if (!user) throw new HttpError(404, "User not found");
@@ -36,14 +40,12 @@ export class UserService {
     return { token, user };
   }
 
-  // -------------------- Get User By ID --------------------
   async getUserById(userId: string) {
     const user = await userRepository.getUserById(userId);
     if (!user) throw new HttpError(404, "User not found");
     return user;
   }
 
-  // -------------------- Update User --------------------
   async updateUser(userId: string, data: UpdateUserDto) {
     const user = await userRepository.getUserById(userId);
     if (!user) throw new HttpError(404, "User not found");
@@ -58,10 +60,16 @@ export class UserService {
     }
 
     const { confirmPassword, ...updateData } = data;
-    return await userRepository.updateUser(userId, updateData);
+    const updatedUser = await userRepository.updateUser(userId, updateData);
+    
+    if (!updatedUser) throw new HttpError(404, "User not found");
+    
+    const userObject = typeof updatedUser.toObject === "function" ? updatedUser.toObject() : updatedUser;
+    const { password, ...userWithoutPassword } = userObject;
+
+    return userWithoutPassword;
   }
 
-  // -------------------- Send Reset Password Email --------------------
   async sendResetPasswordEmail(email?: string) {
     if (!email) throw new HttpError(400, "Email is required");
 
@@ -88,7 +96,6 @@ export class UserService {
     return { message: "Password reset email sent successfully." };
   }
 
-  // -------------------- Reset Password --------------------
   async resetPassword(token?: string, newPassword?: string) {
     if (!token || !newPassword) throw new HttpError(400, "Token and new password are required");
 
@@ -109,17 +116,20 @@ export class UserService {
     }
   }
 
-  // -------------------- Logout --------------------
   async logout() {
     return true;
   }
 
-  // -------------------- Get All Users --------------------
-  async getAllUsers(page: number = 1, size: number = 10, search?: string) {
-    return await userRepository.getAllUsers(page, size, search);
+  async getAllUsers(page?: number, size?: number, search?: string): Promise<IUser[]> {
+    const result = await userRepository.getAllUsers(page, size, search);
+    
+    if (Array.isArray(result)) {
+      return result;
+    }
+    
+    return result.users;
   }
 
-  // -------------------- Delete User --------------------
   async deleteUser(userId: string) {
     const user = await userRepository.getUserById(userId);
     if (!user) throw new HttpError(404, "User not found");

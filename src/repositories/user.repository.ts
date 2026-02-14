@@ -7,10 +7,10 @@ export interface IUserRepository {
   getUserByFullName(fullName: string): Promise<IUser | null>;
   getUserById(id: string): Promise<IUser | null>;
   getAllUsers(
-    page: number,
-    size: number,
+    page?: number,
+    size?: number,
     search?: string
-  ): Promise<{ users: IUser[]; total: number }>;
+  ): Promise<IUser[] | { users: IUser[]; total: number }>;
   updateUser(id: string, data: Partial<IUser>): Promise<IUser | null>;
   deleteUser(id: string): Promise<boolean>;
 }
@@ -34,10 +34,21 @@ export class UserRepository implements IUserRepository {
   }
 
   async getAllUsers(
-    page: number,
-    size: number,
+    page?: number,
+    size?: number,
     search?: string
-  ): Promise<{ users: IUser[]; total: number }> {
+  ): Promise<IUser[] | { users: IUser[]; total: number }> {
+    if (!page || !size) {
+      const filter: QueryFilter<IUser> = {};
+      if (search) {
+        filter.$or = [
+          { fullName: { $regex: search, $options: "i" } },
+          { email: { $regex: search, $options: "i" } },
+        ];
+      }
+      return await UserModel.find(filter);
+    }
+
     const filter: QueryFilter<IUser> = {};
 
     if (search) {

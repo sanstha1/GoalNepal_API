@@ -29,6 +29,7 @@ export const authorizedMiddleware = async (
 
     const decoded = jwt.verify(token, JWT_SECRET) as {
       id: string;
+      role?: string;
     };
 
     if (!decoded || !decoded.id) {
@@ -50,6 +51,10 @@ export const authorizedMiddleware = async (
       return res.status(401).json({ message: "User no longer exists" });
     }
 
+    if (decoded.role === "admin") {
+      isAdmin = true;
+    }
+
     req.user = {
       id: user._id,
       _id: user._id,
@@ -69,7 +74,7 @@ export const isAdmin = (
   res: Response,
   next: NextFunction
 ) => {
-  if (!req.user || (!req.isAdmin && req.user.role !== "admin")) {
+  if (!req.user || req.user.role !== "admin") {
     return res.status(403).json({
       success: false,
       message: "Forbidden: Admin access required",

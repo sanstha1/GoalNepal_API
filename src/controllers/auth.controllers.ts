@@ -95,7 +95,10 @@ export const login = async (req: Request, res: Response) => {
     };
 
     const token = jwt.sign(
-      { id: user._id.toString() },
+      { 
+        id: user._id.toString(),
+        role: user.role
+      },
       secret,
       options
     );
@@ -109,6 +112,7 @@ export const login = async (req: Request, res: Response) => {
         fullName: user.fullName,
         email: user.email,
         profilePicture: user.profilePicture,
+        role: user.role,
       },
     });
   } catch (error: any) {

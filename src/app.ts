@@ -46,7 +46,7 @@ app.use('/profile_pictures', express.static(path.join(process.cwd(), 'public/pro
 // API routes
 app.use('/api/auth', authRoutes);
 app.use('/api/profile', profileRoutes);
-app.use('/api/admin/users', adminRoutes); // keep admin routes
+app.use('/api/admin/users', adminRoutes);
 
 // Default route
 app.get('/', (req: Request, res: Response) => {
