@@ -2,7 +2,7 @@ import path from "path";
 import fs from "fs";
 import multer, { FileFilterCallback } from "multer";
 import { Request } from "express";
-import { v4 as uuidv4 } from "uuid";
+import { randomUUID } from "crypto";
 
 const MAX_SIZE = 2 * 1024 * 1024;
 
@@ -22,7 +22,7 @@ const storage = multer.diskStorage({
   },
   filename: (req: Request, file: Express.Multer.File, cb) => {
     const ext = path.extname(file.originalname);
-    const uniqueName = `pro-pic-${uuidv4()}-${Date.now()}${ext}`;
+    const uniqueName = `pro-pic-${randomUUID()}-${Date.now()}${ext}`;
     cb(null, uniqueName);
   },
 });

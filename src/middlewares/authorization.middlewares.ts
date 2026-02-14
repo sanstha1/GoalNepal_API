@@ -19,50 +19,38 @@ export const authorizedMiddleware = async (
   next: NextFunction
 ) => {
   const authHeader = req.headers.authorization;
-
   if (!authHeader || !authHeader.startsWith("Bearer ")) {
     return res.status(401).json({ message: "Not authorized" });
   }
 
   try {
     const token = authHeader.split(" ")[1];
-
-    const decoded = jwt.verify(token, JWT_SECRET) as {
-      id: string;
-      role?: string;
-    };
-
-    if (!decoded || !decoded.id) {
+    const decoded = jwt.verify(token, JWT_SECRET) as { id: string; role?: string };
+    
+    if (!decoded?.id) {
       return res.status(401).json({ message: "Invalid token" });
     }
 
-    let user = await User.findById(decoded.id);
+    let userDoc = await Admin.findById(decoded.id);
     let isAdmin = false;
 
-    if (!user) {
-      const admin = await Admin.findById(decoded.id);
-      if (admin) {
-        user = admin;
-        isAdmin = true;
-      }
+    if (userDoc) {
+      isAdmin = true;
+    } else {
+      userDoc = await User.findById(decoded.id);
+      isAdmin = decoded.role === "admin" || userDoc?.role === "admin";
     }
 
-    if (!user) {
+    if (!userDoc) {
       return res.status(401).json({ message: "User no longer exists" });
     }
 
-    if (decoded.role === "admin") {
-      isAdmin = true;
-    }
-
     req.user = {
-      id: user._id,
-      _id: user._id,
+      id: userDoc._id,
+      _id: userDoc._id,
       role: isAdmin ? "admin" : "user",
     };
-
     req.isAdmin = isAdmin;
-
     next();
   } catch {
     return res.status(401).json({ message: "Invalid token" });
@@ -80,6 +68,5 @@ export const isAdmin = (
       message: "Forbidden: Admin access required",
     });
   }
-
   next();
 };

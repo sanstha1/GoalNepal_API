@@ -10,7 +10,7 @@ export interface IUserRepository {
     page?: number,
     size?: number,
     search?: string
-  ): Promise<IUser[] | { users: IUser[]; total: number }>;
+  ): Promise<{ users: IUser[]; total: number }>;
   updateUser(id: string, data: Partial<IUser>): Promise<IUser | null>;
   deleteUser(id: string): Promise<boolean>;
 }
@@ -33,35 +33,30 @@ export class UserRepository implements IUserRepository {
     return await UserModel.findById(id);
   }
 
+  private escapeRegex(text: string) {
+    return text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"); // Escape special regex chars
+  }
+
   async getAllUsers(
     page?: number,
     size?: number,
     search?: string
-  ): Promise<IUser[] | { users: IUser[]; total: number }> {
-    if (!page || !size) {
-      const filter: QueryFilter<IUser> = {};
-      if (search) {
-        filter.$or = [
-          { fullName: { $regex: search, $options: "i" } },
-          { email: { $regex: search, $options: "i" } },
-        ];
-      }
-      return await UserModel.find(filter);
-    }
-
+  ): Promise<{ users: IUser[]; total: number }> {
     const filter: QueryFilter<IUser> = {};
 
     if (search) {
+      const escapedSearch = this.escapeRegex(search);
       filter.$or = [
-        { fullName: { $regex: search, $options: "i" } },
-        { email: { $regex: search, $options: "i" } },
+        { fullName: { $regex: escapedSearch, $options: "i" } },
+        { email: { $regex: escapedSearch, $options: "i" } },
       ];
     }
 
-    const skip = (page - 1) * size;
+    const skip = page && size ? (page - 1) * size : 0;
+    const limit = size || 0;
 
     const [users, total] = await Promise.all([
-      UserModel.find(filter).skip(skip).limit(size),
+      UserModel.find(filter).skip(skip).limit(limit),
       UserModel.countDocuments(filter),
     ]);
 
