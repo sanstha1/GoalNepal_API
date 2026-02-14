@@ -194,9 +194,9 @@ describe("User Repository Integrated Tests", () => {
   });
 
   test("25. Create users + search + pagination combined", async () => {
-    await userRepository.createUser({ ...baseUser, fullName: "Alice" });
-    await userRepository.createUser({ ...baseUser, email: "bob@example.com", fullName: "Bob" });
-    await userRepository.createUser({ ...baseUser, email: "charlie@example.com", fullName: "Charlie" });
+    await userRepository.createUser({ ...baseUser, fullName: "Santosh" });
+    await userRepository.createUser({ ...baseUser, email: "s@example.com", fullName: "Santuu" });
+    await userRepository.createUser({ ...baseUser, email: "matcha@example.com", fullName: "Matcha" });
     const result = await userRepository.getAllUsers(1, 2, "a");
     expect(result.users.length).toBe(2);
   });
