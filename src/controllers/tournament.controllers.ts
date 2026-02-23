@@ -13,11 +13,13 @@ class TournamentController {
       const dto = req.body as CreateTournamentDto;
       const userId = req.user!.id;
       const bannerFile = req.file;
+      const bannerUrl = req.body.bannerImage as string | undefined;
 
       const tournament = await tournamentService.createTournament(
         dto,
         userId,
-        bannerFile
+        bannerFile,
+        bannerUrl
       );
 
       res.status(201).json({
@@ -100,12 +102,14 @@ class TournamentController {
     try {
       const dto = req.body as UpdateTournamentDto;
       const bannerFile = req.file;
+      const bannerUrl = req.body.bannerImage as string | undefined;
 
       const tournament = await tournamentService.updateTournament(
         req.params.id,
         dto,
         req.user!.id,
-        bannerFile
+        bannerFile,
+        bannerUrl
       );
 
       res.status(200).json({

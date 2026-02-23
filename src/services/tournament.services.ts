@@ -9,15 +9,17 @@ class TournamentService {
   async createTournament(
     dto: CreateTournamentDto,
     createdBy: string,
-    bannerFile?: Express.Multer.File
+    bannerFile?: Express.Multer.File,
+    bannerUrl?: string
   ): Promise<ITournament> {
     if (new Date(dto.startDate) >= new Date(dto.endDate)) {
       throw new HttpError(400, "Start date must be before end date");
     }
 
+    // file upload takes priority over URL string
     const bannerImage = bannerFile
       ? `tournament_banners/${bannerFile.filename}`
-      : undefined;
+      : bannerUrl ?? undefined;
 
     return await tournamentRepository.create({ ...dto, bannerImage, createdBy });
   }
@@ -42,7 +44,8 @@ class TournamentService {
     id: string,
     dto: UpdateTournamentDto,
     userId: string,
-    bannerFile?: Express.Multer.File
+    bannerFile?: Express.Multer.File,
+    bannerUrl?: string
   ): Promise<ITournament> {
     const existing = await tournamentRepository.findById(id);
     if (!existing) throw new HttpError(404, "Tournament not found");
@@ -58,14 +61,19 @@ class TournamentService {
     }
 
     let bannerImage: string | undefined;
+
     if (bannerFile) {
-      if (existing.bannerImage) {
+      // New file uploaded — delete old file from disk if exists
+      if (existing.bannerImage && !existing.bannerImage.startsWith("http")) {
         const oldPath = `${process.cwd()}/public/${existing.bannerImage}`;
         if (fs.existsSync(oldPath)) {
           fs.unlinkSync(oldPath);
         }
       }
       bannerImage = `tournament_banners/${bannerFile.filename}`;
+    } else if (bannerUrl) {
+      // Raw JSON URL string provided
+      bannerImage = bannerUrl;
     }
 
     const updated = await tournamentRepository.update(id, {
@@ -85,7 +93,8 @@ class TournamentService {
       throw new HttpError(403, "You are not authorized to delete this tournament");
     }
 
-    if (existing.bannerImage) {
+    // Only delete from disk if it's a local file (not a URL)
+    if (existing.bannerImage && !existing.bannerImage.startsWith("http")) {
       const filePath = `${process.cwd()}/public/${existing.bannerImage}`;
       if (fs.existsSync(filePath)) {
         fs.unlinkSync(filePath);

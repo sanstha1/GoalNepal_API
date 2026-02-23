@@ -8,6 +8,8 @@ import { HttpError } from './errors/http-error';
 import authRoutes from "./routes/auth.route";
 import profileRoutes from './routes/profile.route';
 import adminRoutes from './routes/admin/admin.routes';
+// TOURNAMENT ROUTES
+import tournamentRoutes from './routes/tournament.route';
 
 const app: Application = express();
 
@@ -42,11 +44,14 @@ app.use((req: Request, res: Response, next) => {
 // Static folders
 app.use('/uploads', express.static(path.join(process.cwd(), 'uploads')));
 app.use('/profile_pictures', express.static(path.join(process.cwd(), 'public/profile_pictures')));
+app.use('/tournament_banners', express.static(path.join(process.cwd(), 'public/tournament_banners')));
 
 // API routes
 app.use('/api/auth', authRoutes);
 app.use('/api/profile', profileRoutes);
 app.use('/api/admin/users', adminRoutes);
+// TOURNAMENT
+app.use('/api/tournaments', tournamentRoutes);
 
 // Default route
 app.get('/', (req: Request, res: Response) => {

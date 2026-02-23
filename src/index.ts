@@ -8,8 +8,9 @@ import { connectDatabase } from './database/mangodb';
 async function startServer() {
   try {
     await connectDatabase();
-    app.listen(PORT, () => {
+    app.listen(PORT, '0.0.0.0', () => {
       console.log(`Server running on http://localhost:${PORT}`);
+      console.log(`Server accessible at http://192.168.10.74:${PORT}`);
       console.log(`MongoDB connected at: ${MONGODB_URI}`);
     });
   } catch (error) {
