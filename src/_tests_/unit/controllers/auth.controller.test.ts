@@ -127,18 +127,21 @@ describe("Auth Controller Unit Tests", () => {
     expect(res.status).toHaveBeenCalledWith(400);
   });
 
-  // KEY FIX: test 13 - the controller does UserModel.findOne(...).select(...)
-  // So EVERY findOne call in resetPassword tests needs { select: jest.fn().mockResolvedValue(...) }
-  it("13. resetPassword - should return 400 if token not found", async () => {
-    req.params = { token: "badtoken" };
-    req.body = { newPassword: "newpass123" };
-    // Controller calls findOne().select() — mock must return object with .select()
-    (UserModel.findOne as jest.Mock).mockReturnValue({
-      select: jest.fn().mockResolvedValue(null),
-    });
-    await resetPassword(req as Request, res as Response);
-    expect(res.status).toHaveBeenCalledWith(400);
+it("13. resetPassword - should return 400 if token not found", async () => {
+  req.params = { token: "badtoken" };
+  req.body = { newPassword: "newpass123" };
+
+  (UserModel.findOne as jest.Mock).mockImplementation(() => {
+    console.log("findOne mock called in test 13");
+    return {
+      select: jest.fn().mockResolvedValue(null)
+    };
   });
+
+  await resetPassword(req as Request, res as Response);
+
+  expect(res.status).toHaveBeenCalledWith(400);
+});
 
   it("14. resetPassword - should return 400 if token expired", async () => {
     req.params = { token: "expiredtoken" };
@@ -180,6 +183,7 @@ describe("Auth Controller Unit Tests", () => {
       ...fakeUser,
       resetPasswordToken: "validtoken",
       resetPasswordExpire: Date.now() + 900000,
+      password: "oldhashed",
       save: jest.fn().mockResolvedValue(true),
     };
     (UserModel.findOne as jest.Mock).mockReturnValue({

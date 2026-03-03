@@ -1,32 +1,32 @@
 import { Request, Response, NextFunction } from "express";
 import { AdminController } from "../../../controllers/admin/admin.controller";
 
-// Shared mock objects — defined at module scope but populated inside factory via closure
-const mockAdminService = {
-  registerAdmin: jest.fn(),
-  loginAdmin: jest.fn(),
-  getAdminById: jest.fn(),
-  updateAdminProfile: jest.fn(),
-  getAllAdmins: jest.fn(),
-  deleteAdmin: jest.fn(),
-};
+jest.mock("../../../services/admin/admin.service", () => {
+  const mockAdminService = {
+    registerAdmin: jest.fn(),
+    loginAdmin: jest.fn(),
+    getAdminById: jest.fn(),
+    updateAdminProfile: jest.fn(),
+    getAllAdmins: jest.fn(),
+    deleteAdmin: jest.fn(),
+  };
+  return {
+    AdminService: jest.fn().mockImplementation(() => mockAdminService),
+  };
+});
 
-const mockUserService = {
-  getAllUsers: jest.fn(),
-  getUserById: jest.fn(),
-  deleteUser: jest.fn(),
-  createUser: jest.fn(),
-  updateUser: jest.fn(),
-};
-
-// jest.mock is hoisted, but object LITERALS with jest.fn() inside are fine
-jest.mock("../../../services/admin/admin.service", () => ({
-  AdminService: jest.fn().mockImplementation(() => mockAdminService),
-}));
-
-jest.mock("../../../services/user.services", () => ({
-  UserService: jest.fn().mockImplementation(() => mockUserService),
-}));
+jest.mock("../../../services/user.services", () => {
+  const mockUserService = {
+    getAllUsers: jest.fn(),
+    getUserById: jest.fn(),
+    deleteUser: jest.fn(),
+    createUser: jest.fn(),
+    updateUser: jest.fn(),
+  };
+  return {
+    UserService: jest.fn().mockImplementation(() => mockUserService),
+  };
+});
 
 describe("AdminController Unit Tests", () => {
   let adminController: AdminController;
@@ -65,6 +65,7 @@ describe("AdminController Unit Tests", () => {
   });
 
   it("1. registerAdmin - should return 201 on success", async () => {
+    const mockAdminService = new (require("../../../services/admin/admin.service").AdminService)();
     mockAdminService.registerAdmin.mockResolvedValue(fakeAdminDoc);
     await adminController.registerAdmin(req as Request, res as Response, next);
     expect(res.status).toHaveBeenCalledWith(201);
@@ -72,12 +73,14 @@ describe("AdminController Unit Tests", () => {
   });
 
   it("2. registerAdmin - should call next on error", async () => {
+    const mockAdminService = new (require("../../../services/admin/admin.service").AdminService)();
     mockAdminService.registerAdmin.mockRejectedValue(new Error("fail"));
     await adminController.registerAdmin(req as Request, res as Response, next);
     expect(next).toHaveBeenCalled();
   });
 
   it("3. loginAdmin - should return 200 on success", async () => {
+    const mockAdminService = new (require("../../../services/admin/admin.service").AdminService)();
     mockAdminService.loginAdmin.mockResolvedValue({ token: "tok", admin: fakeAdminDoc });
     await adminController.loginAdmin(req as Request, res as Response, next);
     expect(res.status).toHaveBeenCalledWith(200);
@@ -85,12 +88,14 @@ describe("AdminController Unit Tests", () => {
   });
 
   it("4. loginAdmin - should call next on error", async () => {
+    const mockAdminService = new (require("../../../services/admin/admin.service").AdminService)();
     mockAdminService.loginAdmin.mockRejectedValue(new Error("fail"));
     await adminController.loginAdmin(req as Request, res as Response, next);
     expect(next).toHaveBeenCalled();
   });
 
   it("5. getAdminProfile - should return 200 on success", async () => {
+    const mockAdminService = new (require("../../../services/admin/admin.service").AdminService)();
     (req as any).user = { id: "admin123" };
     mockAdminService.getAdminById.mockResolvedValue(fakeAdminDoc);
     await adminController.getAdminProfile(req as Request, res as Response, next);
@@ -98,6 +103,7 @@ describe("AdminController Unit Tests", () => {
   });
 
   it("6. getAdminProfile - should return 404 if not found", async () => {
+    const mockAdminService = new (require("../../../services/admin/admin.service").AdminService)();
     (req as any).user = { id: "admin123" };
     mockAdminService.getAdminById.mockResolvedValue(null);
     await adminController.getAdminProfile(req as Request, res as Response, next);
@@ -105,6 +111,7 @@ describe("AdminController Unit Tests", () => {
   });
 
   it("7. updateAdminProfile - should return 200 on success", async () => {
+    const mockAdminService = new (require("../../../services/admin/admin.service").AdminService)();
     (req as any).user = { id: "admin123" };
     req.body = { fullName: "Updated" };
     mockAdminService.updateAdminProfile.mockResolvedValue(fakeAdminDoc);
@@ -113,6 +120,7 @@ describe("AdminController Unit Tests", () => {
   });
 
   it("8. updateAdminProfile - should return 404 if not found", async () => {
+    const mockAdminService = new (require("../../../services/admin/admin.service").AdminService)();
     (req as any).user = { id: "admin123" };
     req.body = {};
     mockAdminService.updateAdminProfile.mockResolvedValue(null);
@@ -121,18 +129,21 @@ describe("AdminController Unit Tests", () => {
   });
 
   it("9. getAllAdmins - should return 200 with admins", async () => {
+    const mockAdminService = new (require("../../../services/admin/admin.service").AdminService)();
     mockAdminService.getAllAdmins.mockResolvedValue([fakeAdminDoc]);
     await adminController.getAllAdmins(req as Request, res as Response, next);
     expect(res.status).toHaveBeenCalledWith(200);
   });
 
   it("10. getAllAdmins - should handle non-array result", async () => {
+    const mockAdminService = new (require("../../../services/admin/admin.service").AdminService)();
     mockAdminService.getAllAdmins.mockResolvedValue(null);
     await adminController.getAllAdmins(req as Request, res as Response, next);
     expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ success: true, data: [] }));
   });
 
   it("11. getAdminById - should return 200 on success", async () => {
+    const mockAdminService = new (require("../../../services/admin/admin.service").AdminService)();
     req.params = { adminId: "admin123" };
     mockAdminService.getAdminById.mockResolvedValue(fakeAdminDoc);
     await adminController.getAdminById(req as Request, res as Response, next);
@@ -140,6 +151,7 @@ describe("AdminController Unit Tests", () => {
   });
 
   it("12. getAdminById - should return 404 if not found", async () => {
+    const mockAdminService = new (require("../../../services/admin/admin.service").AdminService)();
     req.params = { adminId: "bad" };
     mockAdminService.getAdminById.mockResolvedValue(null);
     await adminController.getAdminById(req as Request, res as Response, next);
@@ -147,6 +159,7 @@ describe("AdminController Unit Tests", () => {
   });
 
   it("13. deleteAdmin - should return 200 on success", async () => {
+    const mockAdminService = new (require("../../../services/admin/admin.service").AdminService)();
     req.params = { adminId: "admin123" };
     mockAdminService.deleteAdmin.mockResolvedValue(true);
     await adminController.deleteAdmin(req as Request, res as Response, next);
@@ -154,6 +167,7 @@ describe("AdminController Unit Tests", () => {
   });
 
   it("14. deleteAdmin - should call next on error", async () => {
+    const mockAdminService = new (require("../../../services/admin/admin.service").AdminService)();
     req.params = { adminId: "admin123" };
     mockAdminService.deleteAdmin.mockRejectedValue(new Error("fail"));
     await adminController.deleteAdmin(req as Request, res as Response, next);
@@ -161,18 +175,21 @@ describe("AdminController Unit Tests", () => {
   });
 
   it("15. getAllUsers - should return 200 with users", async () => {
+    const mockUserService = new (require("../../../services/user.services").UserService)();
     mockUserService.getAllUsers.mockResolvedValue([fakeUserDoc]);
     await adminController.getAllUsers(req as Request, res as Response, next);
     expect(res.status).toHaveBeenCalledWith(200);
   });
 
   it("16. getAllUsers - should handle non-array result", async () => {
+    const mockUserService = new (require("../../../services/user.services").UserService)();
     mockUserService.getAllUsers.mockResolvedValue(null);
     await adminController.getAllUsers(req as Request, res as Response, next);
     expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ success: true, data: [] }));
   });
 
   it("17. getUserById - should return 200 on success", async () => {
+    const mockUserService = new (require("../../../services/user.services").UserService)();
     req.params = { userId: "user123" };
     mockUserService.getUserById.mockResolvedValue(fakeUserDoc);
     await adminController.getUserById(req as Request, res as Response, next);
@@ -180,6 +197,7 @@ describe("AdminController Unit Tests", () => {
   });
 
   it("18. getUserById - should return 404 if not found", async () => {
+    const mockUserService = new (require("../../../services/user.services").UserService)();
     req.params = { userId: "bad" };
     mockUserService.getUserById.mockResolvedValue(null);
     await adminController.getUserById(req as Request, res as Response, next);
@@ -187,6 +205,7 @@ describe("AdminController Unit Tests", () => {
   });
 
   it("19. deleteUser - should return 200 on success", async () => {
+    const mockUserService = new (require("../../../services/user.services").UserService)();
     req.params = { userId: "user123" };
     mockUserService.deleteUser.mockResolvedValue(true);
     await adminController.deleteUser(req as Request, res as Response, next);
@@ -194,6 +213,7 @@ describe("AdminController Unit Tests", () => {
   });
 
   it("20. deleteUser - should call next on error", async () => {
+    const mockUserService = new (require("../../../services/user.services").UserService)();
     req.params = { userId: "user123" };
     mockUserService.deleteUser.mockRejectedValue(new Error("fail"));
     await adminController.deleteUser(req as Request, res as Response, next);
@@ -201,6 +221,7 @@ describe("AdminController Unit Tests", () => {
   });
 
   it("21. createUser - should return 201 on success", async () => {
+    const mockUserService = new (require("../../../services/user.services").UserService)();
     req.body = { fullName: "New User", email: "new@test.com", password: "pass123" };
     (req as any).file = undefined;
     mockUserService.createUser.mockResolvedValue({ ...fakeUserDoc, profilePicture: undefined });
@@ -209,6 +230,7 @@ describe("AdminController Unit Tests", () => {
   });
 
   it("22. createUser - should set profilePicture from file", async () => {
+    const mockUserService = new (require("../../../services/user.services").UserService)();
     req.body = { fullName: "New", email: "new@test.com", password: "pass" };
     (req as any).file = { filename: "pic.png" };
     mockUserService.createUser.mockResolvedValue({ ...fakeUserDoc, profilePicture: "pic.png" });
@@ -217,6 +239,7 @@ describe("AdminController Unit Tests", () => {
   });
 
   it("23. createUser - should call next on error", async () => {
+    const mockUserService = new (require("../../../services/user.services").UserService)();
     req.body = {};
     (req as any).file = undefined;
     mockUserService.createUser.mockRejectedValue(new Error("fail"));
@@ -225,6 +248,7 @@ describe("AdminController Unit Tests", () => {
   });
 
   it("24. updateUser - should return 200 on success", async () => {
+    const mockUserService = new (require("../../../services/user.services").UserService)();
     req.params = { userId: "user123" };
     req.body = { fullName: "Updated" };
     (req as any).file = undefined;
@@ -234,6 +258,7 @@ describe("AdminController Unit Tests", () => {
   });
 
   it("25. updateUser - should return 404 if not found", async () => {
+    const mockUserService = new (require("../../../services/user.services").UserService)();
     req.params = { userId: "bad" };
     req.body = {};
     (req as any).file = undefined;
@@ -243,6 +268,7 @@ describe("AdminController Unit Tests", () => {
   });
 
   it("26. updateUser - should call next on error", async () => {
+    const mockUserService = new (require("../../../services/user.services").UserService)();
     req.params = { userId: "user123" };
     req.body = {};
     (req as any).file = undefined;
