@@ -32,52 +32,54 @@ describe("Auth Controller Unit Tests", () => {
     res = { status: jest.fn().mockReturnThis(), json: jest.fn() };
   });
 
-  it("1. register - should return 201 on success", async () => {
+  it("register - success", async () => {
     req.body = { fullName: "Test User", email: "test@test.com", password: "pass123" };
     (UserModel.findOne as jest.Mock).mockResolvedValue(null);
     (bcrypt.hash as jest.Mock).mockResolvedValue("hashedpass");
     (UserModel.create as jest.Mock).mockResolvedValue(fakeUser);
+
     await register(req as Request, res as Response);
     expect(res.status).toHaveBeenCalledWith(201);
   });
 
-  it("2. register - should return 400 if fields missing", async () => {
+  it("register - missing fields", async () => {
     req.body = { email: "test@test.com" };
     await register(req as Request, res as Response);
     expect(res.status).toHaveBeenCalledWith(400);
   });
 
-  it("3. register - should return 403 if email in use", async () => {
+  it("register - email in use", async () => {
     req.body = { fullName: "Test", email: "test@test.com", password: "pass123" };
     (UserModel.findOne as jest.Mock).mockResolvedValue(fakeUser);
     await register(req as Request, res as Response);
     expect(res.status).toHaveBeenCalledWith(403);
   });
 
-  it("4. login - should return 200 with token on success", async () => {
+  it("login - success", async () => {
     req.body = { email: "test@test.com", password: "pass123" };
     (UserModel.findOne as jest.Mock).mockReturnValue({ select: jest.fn().mockResolvedValue(fakeUser) });
     (bcrypt.compare as jest.Mock).mockResolvedValue(true);
     process.env.JWT_SECRET = "testsecret";
     (jwt.sign as jest.Mock).mockReturnValue("token123");
+
     await login(req as Request, res as Response);
     expect(res.status).toHaveBeenCalledWith(200);
   });
 
-  it("5. login - should return 400 if fields missing", async () => {
+  it("login - missing fields", async () => {
     req.body = { email: "test@test.com" };
     await login(req as Request, res as Response);
     expect(res.status).toHaveBeenCalledWith(400);
   });
 
-  it("6. login - should return 401 if user not found", async () => {
+  it("login - user not found", async () => {
     req.body = { email: "test@test.com", password: "pass" };
     (UserModel.findOne as jest.Mock).mockReturnValue({ select: jest.fn().mockResolvedValue(null) });
     await login(req as Request, res as Response);
     expect(res.status).toHaveBeenCalledWith(401);
   });
 
-  it("7. login - should return 401 if password invalid", async () => {
+  it("login - invalid password", async () => {
     req.body = { email: "test@test.com", password: "wrong" };
     (UserModel.findOne as jest.Mock).mockReturnValue({ select: jest.fn().mockResolvedValue(fakeUser) });
     (bcrypt.compare as jest.Mock).mockResolvedValue(false);
@@ -85,112 +87,83 @@ describe("Auth Controller Unit Tests", () => {
     expect(res.status).toHaveBeenCalledWith(401);
   });
 
-  it("8. login - should return 500 if JWT_SECRET missing", async () => {
+  it("login - JWT_SECRET missing", async () => {
     req.body = { email: "test@test.com", password: "pass123" };
     (UserModel.findOne as jest.Mock).mockReturnValue({ select: jest.fn().mockResolvedValue(fakeUser) });
     (bcrypt.compare as jest.Mock).mockResolvedValue(true);
     const original = process.env.JWT_SECRET;
     delete process.env.JWT_SECRET;
+
     await login(req as Request, res as Response);
     expect(res.status).toHaveBeenCalledWith(500);
     process.env.JWT_SECRET = original;
   });
 
-  it("9. sendResetPasswordEmail - should return 400 if no email", async () => {
+  it("sendResetPasswordEmail - no email", async () => {
     req.body = {};
     await sendResetPasswordEmail(req as Request, res as Response);
     expect(res.status).toHaveBeenCalledWith(400);
   });
 
-  it("10. sendResetPasswordEmail - should return 200 if user not found", async () => {
+  it("sendResetPasswordEmail - user not found", async () => {
     req.body = { email: "notexist@test.com" };
     (UserModel.findOne as jest.Mock).mockResolvedValue(null);
     await sendResetPasswordEmail(req as Request, res as Response);
     expect(res.status).toHaveBeenCalledWith(200);
   });
 
-  it("11. sendResetPasswordEmail - should send email and return 200", async () => {
+  it("sendResetPasswordEmail - success", async () => {
     req.body = { email: "test@test.com" };
     const userWithSave = { ...fakeUser, save: jest.fn().mockResolvedValue(true) };
-    (UserModel.findOne as jest.Mock)
-      .mockResolvedValueOnce(userWithSave)
-      .mockResolvedValueOnce({ ...userWithSave, resetPasswordToken: "tok", resetPasswordExpire: Date.now() + 900000 });
+    (UserModel.findOne as jest.Mock).mockResolvedValue(userWithSave);
     (emailConfig.sendEmail as jest.Mock).mockResolvedValue(true);
+
     await sendResetPasswordEmail(req as Request, res as Response);
     expect(res.status).toHaveBeenCalledWith(200);
   });
 
-  it("12. resetPassword - should return 400 if no newPassword", async () => {
+  it("resetPassword - no newPassword", async () => {
     req.params = { token: "sometoken" };
     req.body = {};
     await resetPassword(req as Request, res as Response);
     expect(res.status).toHaveBeenCalledWith(400);
   });
 
-it("13. resetPassword - should return 400 if token not found", async () => {
-  req.params = { token: "badtoken" };
-  req.body = { newPassword: "newpass123" };
-
-  (UserModel.findOne as jest.Mock).mockImplementation(() => {
-    console.log("findOne mock called in test 13");
-    return {
-      select: jest.fn().mockResolvedValue(null)
-    };
-  });
-
-  await resetPassword(req as Request, res as Response);
-
-  expect(res.status).toHaveBeenCalledWith(400);
-});
-
-  it("14. resetPassword - should return 400 if token expired", async () => {
-    req.params = { token: "expiredtoken" };
+  it("resetPassword - invalid token", async () => {
+    req.params = { token: "badtoken" };
     req.body = { newPassword: "newpass123" };
-    const expiredUser = {
-      ...fakeUser,
-      resetPasswordToken: "expiredtoken",
-      resetPasswordExpire: Date.now() - 10000,
-      save: jest.fn().mockResolvedValue(true),
-    };
-    (UserModel.findOne as jest.Mock).mockReturnValue({
-      select: jest.fn().mockResolvedValue(expiredUser),
-    });
+    (UserModel.findOne as jest.Mock).mockReturnValue({ select: jest.fn().mockResolvedValue(null) });
     await resetPassword(req as Request, res as Response);
     expect(res.status).toHaveBeenCalledWith(400);
   });
 
-  it("15. resetPassword - should return 400 if same password used", async () => {
+  it("resetPassword - expired token", async () => {
+    req.params = { token: "expiredtoken" };
+    req.body = { newPassword: "newpass123" };
+    const expiredUser = { ...fakeUser, resetPasswordToken: "expiredtoken", resetPasswordExpire: Date.now() - 10000 };
+    (UserModel.findOne as jest.Mock).mockReturnValue({ select: jest.fn().mockResolvedValue(expiredUser) });
+    await resetPassword(req as Request, res as Response);
+    expect(res.status).toHaveBeenCalledWith(400);
+  });
+
+  it("resetPassword - same password", async () => {
     req.params = { token: "validtoken" };
     req.body = { newPassword: "samepass" };
-    const validUser = {
-      ...fakeUser,
-      resetPasswordToken: "validtoken",
-      resetPasswordExpire: Date.now() + 900000,
-      save: jest.fn().mockResolvedValue(true),
-    };
-    (UserModel.findOne as jest.Mock).mockReturnValue({
-      select: jest.fn().mockResolvedValue(validUser),
-    });
+    const validUser = { ...fakeUser, resetPasswordToken: "validtoken", resetPasswordExpire: Date.now() + 900000 };
+    (UserModel.findOne as jest.Mock).mockReturnValue({ select: jest.fn().mockResolvedValue(validUser) });
     (bcrypt.compare as jest.Mock).mockResolvedValue(true);
     await resetPassword(req as Request, res as Response);
     expect(res.status).toHaveBeenCalledWith(400);
   });
 
-  it("16. resetPassword - should return 200 on success", async () => {
+  it("resetPassword - success", async () => {
     req.params = { token: "validtoken" };
     req.body = { newPassword: "newpass123" };
-    const validUser = {
-      ...fakeUser,
-      resetPasswordToken: "validtoken",
-      resetPasswordExpire: Date.now() + 900000,
-      password: "oldhashed",
-      save: jest.fn().mockResolvedValue(true),
-    };
-    (UserModel.findOne as jest.Mock).mockReturnValue({
-      select: jest.fn().mockResolvedValue(validUser),
-    });
+    const validUser = { ...fakeUser, resetPasswordToken: "validtoken", resetPasswordExpire: Date.now() + 900000, password: "oldhashed" };
+    (UserModel.findOne as jest.Mock).mockReturnValue({ select: jest.fn().mockResolvedValue(validUser) });
     (bcrypt.compare as jest.Mock).mockResolvedValue(false);
     (bcrypt.hash as jest.Mock).mockResolvedValue("newhash");
+
     await resetPassword(req as Request, res as Response);
     expect(res.status).toHaveBeenCalledWith(200);
   });
