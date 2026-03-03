@@ -9,12 +9,12 @@ describe("User Repository Integrated Tests", () => {
     userRepository = new UserRepository();
   });
 
-  afterEach(async () => {
+  beforeEach(async () => {
     await UserModel.deleteMany({});
   });
 
   afterAll(async () => {
-    await mongoose.connection.close();
+    await UserModel.deleteMany({});
   });
 
   const baseUser = {
