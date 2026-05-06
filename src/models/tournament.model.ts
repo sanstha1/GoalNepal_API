@@ -42,6 +42,11 @@ const TournamentSchema: Schema = new Schema(
       type: Number,
       min: 2,
     },
+    registrationFee: {
+      type: Number,
+      min: 0,
+      default: 0,
+    },
     bannerImage: {
       type: String,
       trim: true,
@@ -66,6 +71,7 @@ export interface ITournament extends Document {
   description?: string;
   prize?: string;
   maxTeams?: number;
+  registrationFee?: number;
   bannerImage?: string | null;
   createdBy: mongoose.Types.ObjectId;
   _id: mongoose.Types.ObjectId;

@@ -8,6 +8,7 @@ export interface CreateTournamentDto {
   description?: string;
   prize?: string;
   maxTeams?: number;
+  registrationFee?: number;
 }
 
 export interface UpdateTournamentDto {
@@ -20,4 +21,5 @@ export interface UpdateTournamentDto {
   description?: string;
   prize?: string;
   maxTeams?: number;
+  registrationFee?: number;
 }
