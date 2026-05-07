@@ -16,12 +16,17 @@ class TournamentService {
       throw new HttpError(400, "Start date must be before end date");
     }
 
-    // file upload takes priority over URL string
     const bannerImage = bannerFile
       ? `tournament_banners/${bannerFile.filename}`
       : bannerUrl ?? undefined;
 
-    return await tournamentRepository.create({ ...dto, bannerImage, createdBy });
+    return await tournamentRepository.create({
+      ...dto,
+      bannerImage,
+      createdBy,
+      maxTeams: dto.maxTeams != null ? Number(dto.maxTeams) : undefined,
+      registrationFee: dto.registrationFee != null ? Number(dto.registrationFee) : 0,
+    });
   }
 
   async getTournamentById(id: string): Promise<ITournament> {
@@ -30,9 +35,7 @@ class TournamentService {
     return tournament;
   }
 
-  async getAllTournaments(
-    query: TournamentQuery
-  ): Promise<PaginatedTournaments<ITournament>> {
+  async getAllTournaments(query: TournamentQuery): Promise<PaginatedTournaments<ITournament>> {
     return await tournamentRepository.findAll(query);
   }
 
@@ -63,7 +66,6 @@ class TournamentService {
     let bannerImage: string | undefined;
 
     if (bannerFile) {
-      // New file uploaded — delete old file from disk if exists
       if (existing.bannerImage && !existing.bannerImage.startsWith("http")) {
         const oldPath = `${process.cwd()}/public/${existing.bannerImage}`;
         if (fs.existsSync(oldPath)) {
@@ -72,13 +74,14 @@ class TournamentService {
       }
       bannerImage = `tournament_banners/${bannerFile.filename}`;
     } else if (bannerUrl) {
-      // Raw JSON URL string provided
       bannerImage = bannerUrl;
     }
 
     const updated = await tournamentRepository.update(id, {
       ...dto,
       ...(bannerImage && { bannerImage }),
+      ...(dto.maxTeams != null && { maxTeams: Number(dto.maxTeams) }),
+      ...(dto.registrationFee != null && { registrationFee: Number(dto.registrationFee) }),
     });
 
     if (!updated) throw new HttpError(500, "Tournament update failed");
@@ -93,7 +96,6 @@ class TournamentService {
       throw new HttpError(403, "You are not authorized to delete this tournament");
     }
 
-    // Only delete from disk if it's a local file (not a URL)
     if (existing.bannerImage && !existing.bannerImage.startsWith("http")) {
       const filePath = `${process.cwd()}/public/${existing.bannerImage}`;
       if (fs.existsSync(filePath)) {

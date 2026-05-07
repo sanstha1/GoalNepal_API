@@ -11,6 +11,8 @@ class TournamentRepository {
       ...data,
       startDate: new Date(data.startDate),
       endDate: new Date(data.endDate),
+      maxTeams: data.maxTeams != null ? Number(data.maxTeams) : undefined,
+      registrationFee: data.registrationFee != null ? Number(data.registrationFee) : 0,
     });
     return await tournament.save();
   }
@@ -64,6 +66,8 @@ class TournamentRepository {
     const updateData: Record<string, unknown> = { ...data };
     if (data.startDate) updateData.startDate = new Date(data.startDate);
     if (data.endDate) updateData.endDate = new Date(data.endDate);
+    if (data.maxTeams != null) updateData.maxTeams = Number(data.maxTeams);
+    if (data.registrationFee != null) updateData.registrationFee = Number(data.registrationFee);
 
     return await TournamentModel.findByIdAndUpdate(id, updateData, {
       new: true,
