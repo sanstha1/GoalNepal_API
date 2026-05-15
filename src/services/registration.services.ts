@@ -1,7 +1,7 @@
 import { registrationRepository } from "../repositories/registration.repository";
 import { CreateRegistrationDto } from "../dtos/registration.dto";
 import { IRegistration } from "../models/registration.model";
-import { notificationService } from "./notification.service";
+import { notificationService } from "./notification.services";
 
 class RegistrationService {
   async registerForTournament(
