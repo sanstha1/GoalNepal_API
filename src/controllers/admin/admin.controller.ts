@@ -2,7 +2,7 @@ import { Request, Response, NextFunction } from "express";
 import { IUser } from "../../models/user.model";
 import { IAdmin } from "../../models/admin/admin.model";
 import { UserService } from "../../services/user.services";
-import { AdminService } from "../../services/admin/admin.service";
+import { AdminService } from "../../services/admin/admin.services";
 
 const adminService = new AdminService();
 const userService = new UserService();

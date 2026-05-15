@@ -10,6 +10,7 @@ import adminRoutes from './routes/admin/admin.routes';
 import userRoutes from './routes/admin/user.routes';
 import tournamentRoutes from './routes/tournament.route';
 import registrationRoutes from './routes/registration.route';
+import notificationRoutes from './routes/notification.routes';
 
 const app: Application = express();
 
@@ -48,6 +49,7 @@ app.use('/api/admin', adminRoutes);
 app.use('/api/admin/users', userRoutes);
 app.use('/api/tournaments', tournamentRoutes);
 app.use('/api/registrations', registrationRoutes);
+app.use("/api/notifications", notificationRoutes);
 
 app.get('/', (req: Request, res: Response) => {
     res.status(200).json({ success: true, message: "GoalNepal API is running" });

@@ -1,4 +1,4 @@
-import { AdminService } from "../../../services/admin/admin.service";
+import { AdminService } from "../../../services/admin/admin.services";
 import bcryptjs from "bcryptjs";
 import jwt from "jsonwebtoken";
 import { HttpError } from "../../../errors/http-error";
