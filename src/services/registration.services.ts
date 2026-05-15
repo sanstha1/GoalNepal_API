@@ -1,6 +1,7 @@
 import { registrationRepository } from "../repositories/registration.repository";
 import { CreateRegistrationDto } from "../dtos/registration.dto";
 import { IRegistration } from "../models/registration.model";
+import { notificationService } from "./notification.service";
 
 class RegistrationService {
   async registerForTournament(
@@ -16,10 +17,22 @@ class RegistrationService {
       throw new Error("You have already registered for this tournament");
     }
 
-    return await registrationRepository.create({
+    const registration = await registrationRepository.create({
       ...dto,
       registeredBy: userId,
     });
+
+    // Fire notification (non-blocking)
+    notificationService
+      .notifyRegistrationPending(
+        userId,
+        dto.tournamentTitle,
+        dto.teamName,
+        dto.feePaid
+      )
+      .catch((err: any) => console.error("Notification error:", err));
+
+    return registration;
   }
 
   async getMyRegistrations(userId: string): Promise<IRegistration[]> {

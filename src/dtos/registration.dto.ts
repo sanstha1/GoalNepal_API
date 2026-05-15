@@ -13,4 +13,5 @@ export interface CreateRegistrationDto {
   captainEmail: string;
   playerCount: number;
   players?: PlayerDto[];
+  feePaid: number;                                 
 }

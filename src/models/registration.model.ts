@@ -24,6 +24,7 @@ const RegistrationSchema: Schema = new Schema(
     },
     playerCount: { type: Number, required: true, min: 1 },
     players: [PlayerSchema],
+    feePaid: { type: Number, default: 0 },         
     status: {
       type: String,
       enum: ["pending", "approved", "rejected"],
@@ -52,6 +53,7 @@ export interface IRegistration extends Document {
   captainEmail: string;
   playerCount: number;
   players: IPlayer[];
+  feePaid: number;                                  
   status: "pending" | "approved" | "rejected";
   registeredBy: mongoose.Types.ObjectId;
   createdAt: Date;
