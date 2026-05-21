@@ -4,6 +4,7 @@ import { CreateTournamentDto, UpdateTournamentDto } from "../dtos/tournament.dto
 import { TournamentQuery, PaginatedTournaments } from "../types/tournament.type";
 import { ITournament } from "../models/tournament.model";
 import { HttpError } from "../errors/http-error";
+import { notificationService } from "./notification.services";
 
 class TournamentService {
   async createTournament(
@@ -20,13 +21,20 @@ class TournamentService {
       ? `tournament_banners/${bannerFile.filename}`
       : bannerUrl ?? undefined;
 
-    return await tournamentRepository.create({
+    const tournament = await tournamentRepository.create({
       ...dto,
       bannerImage,
       createdBy,
       maxTeams: dto.maxTeams != null ? Number(dto.maxTeams) : undefined,
       registrationFee: dto.registrationFee != null ? Number(dto.registrationFee) : 0,
     });
+
+    // Notify all users about the new tournament (non-blocking)
+    notificationService
+      .notifyAllUsersNewTournament(tournament.title, tournament.location)
+      .catch((err: any) => console.error("Notification error:", err));
+
+    return tournament;
   }
 
   async getTournamentById(id: string): Promise<ITournament> {
@@ -68,9 +76,7 @@ class TournamentService {
     if (bannerFile) {
       if (existing.bannerImage && !existing.bannerImage.startsWith("http")) {
         const oldPath = `${process.cwd()}/public/${existing.bannerImage}`;
-        if (fs.existsSync(oldPath)) {
-          fs.unlinkSync(oldPath);
-        }
+        if (fs.existsSync(oldPath)) fs.unlinkSync(oldPath);
       }
       bannerImage = `tournament_banners/${bannerFile.filename}`;
     } else if (bannerUrl) {
@@ -98,9 +104,7 @@ class TournamentService {
 
     if (existing.bannerImage && !existing.bannerImage.startsWith("http")) {
       const filePath = `${process.cwd()}/public/${existing.bannerImage}`;
-      if (fs.existsSync(filePath)) {
-        fs.unlinkSync(filePath);
-      }
+      if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
     }
 
     await tournamentRepository.delete(id);

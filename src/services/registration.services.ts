@@ -2,6 +2,7 @@ import { registrationRepository } from "../repositories/registration.repository"
 import { CreateRegistrationDto } from "../dtos/registration.dto";
 import { IRegistration } from "../models/registration.model";
 import { notificationService } from "./notification.services";
+import { TournamentModel } from "../models/tournament.model";
 
 class RegistrationService {
   async registerForTournament(
@@ -17,20 +18,22 @@ class RegistrationService {
       throw new Error("You have already registered for this tournament");
     }
 
+    const tournament = await TournamentModel.findById(dto.tournamentId);
+
     const registration = await registrationRepository.create({
       ...dto,
+      feePaid: tournament?.registrationFee ?? 0,
       registeredBy: userId,
     });
 
-    // Fire notification (non-blocking)
     notificationService
       .notifyRegistrationPending(
         userId,
-        dto.tournamentTitle,
+        tournament?.title ?? dto.tournamentId,
         dto.teamName,
-        dto.feePaid
+        tournament?.registrationFee ?? 0
       )
-      .catch((err: any) => console.error("Notification error:", err));
+      .catch((err) => console.error("Notification error:", err));
 
     return registration;
   }
@@ -39,9 +42,7 @@ class RegistrationService {
     return await registrationRepository.findByUser(userId);
   }
 
-  async getTournamentRegistrations(
-    tournamentId: string
-  ): Promise<IRegistration[]> {
+  async getTournamentRegistrations(tournamentId: string): Promise<IRegistration[]> {
     return await registrationRepository.findByTournament(tournamentId);
   }
 }
