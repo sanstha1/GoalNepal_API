@@ -54,7 +54,7 @@ class RegistrationController {
     try {
       const registrations =
         await registrationService.getTournamentRegistrations(
-          req.params.tournamentId
+          req.user.tournamentId
         );
       res.status(200).json({ success: true, data: registrations });
     } catch (error) {

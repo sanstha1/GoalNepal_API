@@ -33,7 +33,8 @@ class TournamentController {
 
   async getTournamentById(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      const tournament = await tournamentService.getTournamentById(req.params.id);
+      const id = req.params.id as string;
+      const tournament = await tournamentService.getTournamentById(id);
 
       res.status(200).json({
         success: true,
@@ -79,6 +80,7 @@ class TournamentController {
 
   async updateTournament(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
+      const id = req.params.id as string;
       const dto: UpdateTournamentDto = {
         ...req.body,
         ...(req.body.registrationFee !== undefined && req.body.registrationFee !== "" && {
@@ -92,7 +94,7 @@ class TournamentController {
       const bannerUrl = req.body.bannerImage as string | undefined;
 
       const tournament = await tournamentService.updateTournament(
-        req.params.id,
+        id,
         dto,
         req.user!.id,
         bannerFile,
@@ -111,7 +113,8 @@ class TournamentController {
 
   async deleteTournament(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      await tournamentService.deleteTournament(req.params.id, req.user!.id);
+      const id = req.params.id as string;
+      await tournamentService.deleteTournament(id, req.user!.id);
 
       res.status(200).json({
         success: true,

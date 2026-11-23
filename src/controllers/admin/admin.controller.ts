@@ -1,6 +1,4 @@
 import { Request, Response, NextFunction } from "express";
-import { IUser } from "../../models/user.model";
-import { IAdmin } from "../../models/admin/admin.model";
 import { UserService } from "../../services/user.services";
 import { AdminService } from "../../services/admin/admin.services";
 
@@ -8,7 +6,6 @@ const adminService = new AdminService();
 const userService = new UserService();
 
 export class AdminController {
-  // ------------------- Admin -------------------
   async registerAdmin(req: Request, res: Response, next: NextFunction) {
     try {
       const validatedData = req.body;
@@ -119,7 +116,7 @@ export class AdminController {
 
   async getAdminById(req: Request, res: Response, next: NextFunction) {
     try {
-      const { adminId } = req.params;
+      const adminId = req.params.adminId as string;
       const admin = await adminService.getAdminById(adminId);
 
       if (!admin) return res.status(404).json({ success: false, message: "Admin not found" });
@@ -139,7 +136,7 @@ export class AdminController {
 
   async deleteAdmin(req: Request, res: Response, next: NextFunction) {
     try {
-      const { adminId } = req.params;
+      const adminId = req.params.adminId as string;
       const result = await adminService.deleteAdmin(adminId);
 
       res.status(200).json({
@@ -152,7 +149,6 @@ export class AdminController {
     }
   }
 
-  // ------------------- Users Managed by Admin -------------------
   async getAllUsers(req: Request, res: Response, next: NextFunction) {
     try {
       const users = await userService.getAllUsers();
@@ -176,7 +172,7 @@ export class AdminController {
 
   async getUserById(req: Request, res: Response, next: NextFunction) {
     try {
-      const { userId } = req.params;
+      const userId = req.params.userId as string;
       const user = await userService.getUserById(userId);
       if (!user) return res.status(404).json({ success: false, message: "User not found" });
 
@@ -195,7 +191,7 @@ export class AdminController {
 
   async deleteUser(req: Request, res: Response, next: NextFunction) {
     try {
-      const { userId } = req.params;
+      const userId = req.params.userId as string;
       const result = await userService.deleteUser(userId);
 
       res.status(200).json({
@@ -212,7 +208,6 @@ export class AdminController {
     try {
       const userData = req.body;
 
-      // Handle profile picture upload
       if (req.file) {
         userData.profilePicture = req.file.filename;
       }
@@ -235,7 +230,7 @@ export class AdminController {
 
   async updateUser(req: Request, res: Response, next: NextFunction) {
     try {
-      const { userId } = req.params;
+      const userId = req.params.userId as string;
       const updateData = req.body;
 
       if (req.file) {
